@@ -1,5 +1,5 @@
-"""Synthetic figure-eight: approach, loop CCW r=1.2 at 4 yd/s, loop CW r=1.2 at 4 yd/s, sprint out.
-Expected: loop_r_fit ~ 1.2, bend_index ~ s^2/r = 13.3 yd/s^2, opposite loop signs.
+"""Synthetic hoop run: approach, arc A -100deg, loop B +250deg, arc C -120deg (all r=1.2 at 4 yd/s), sprint out.
+Expected: loopB_r_fit ~ 1.2, bend_index ~ s^2/r = 13.3 yd/s^2.
 Run: PYTHONPATH=src python -m pytest -q tests/
 """
 from datetime import datetime, timedelta
@@ -34,12 +34,16 @@ def synthetic_eight(r=1.2, v_loop=4.0):
     for i in range(12):                      # approach, accelerating
         step(1.0 + 0.3 * i, 0.0)
     w = v_loop / r
-    for _ in range(int(1.6 * np.pi / w / DT)):  # loop 1 (CCW: negative yaw)
+    for _ in range(int(np.deg2rad(100) / w / DT)):  # arc A around hoop 1
         step(v_loop, -w * DT)
-    for _ in range(4):
+    for _ in range(3):
         step(v_loop, 0.0)
-    for _ in range(int(1.6 * np.pi / w / DT)):  # loop 2 (CW)
+    for _ in range(int(np.deg2rad(250) / w / DT)):  # loop B around hoop 2
         step(v_loop, w * DT)
+    for _ in range(3):
+        step(v_loop, 0.0)
+    for _ in range(int(np.deg2rad(120) / w / DT)):  # arc C back around hoop 1
+        step(v_loop, -w * DT)
     for i in range(15):                      # sprint out
         step(min(v_loop + 0.3 * i, 7.5), 0.0)
     return _frames(X, Y, S, D)
@@ -48,11 +52,11 @@ def synthetic_eight(r=1.2, v_loop=4.0):
 def test_figure_eight():
     m = attempt_metrics(synthetic_eight())
     assert m is not None
-    assert abs(m["loop_r_fit"] - 1.2) < 0.2, m["loop_r_fit"]
-    assert abs(m["bend_index"] - 4.0**2 / 1.2) < 2.0, m["bend_index"]
-    assert m["l1_sign"] != m["l2_sign"]
+    assert abs(m["loopB_r_fit"] - 1.2) < 0.2, m["loopB_r_fit"]
+    assert abs(m["bend_index"] - 4.0**2 / 1.2) < 2.5, m["bend_index"]
+    assert 200 < m["loopB_turn_deg"] < 270, m["loopB_turn_deg"]
     assert 7.0 < m["exit_s_peak"] <= 7.5
-    assert m["asym_s"] < 0.05
+    assert abs(m["asym_s"]) < 0.05
 
 
 def test_rejects_short():

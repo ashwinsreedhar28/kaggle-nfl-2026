@@ -13,7 +13,7 @@ def unwrap_deg(deg: np.ndarray) -> np.ndarray:
     return np.rad2deg(np.unwrap(np.deg2rad(deg)))
 
 
-def smooth(x: np.ndarray, window: int = 7, poly: int = 2) -> np.ndarray:
+def smooth(x: np.ndarray, window: int = 5, poly: int = 2) -> np.ndarray:
     n = len(x)
     if n < 5:
         return x
