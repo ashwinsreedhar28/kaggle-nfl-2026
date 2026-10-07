@@ -217,10 +217,10 @@ def fig7_prospect_card(nfl_id: int | None = None):
         lab = f'{r["drill"].replace("_", " ").title().replace("45 Degree Reaction", "")[:30]} · {r["feature"]}'
         ax.text(-3, y, lab + ("" if trusted else f'   [{r["verdict"].lower()}]'), ha="right", va="center", fontsize=9, color=INK if trusted else MUTED)
     ax.set_xlim(0, 100); ax.set_ylim(-0.7, p.height - 0.3); ax.set_yticks([]); ax.grid(axis="y", visible=False)
-    ax.axvline(50, color=GRID, lw=1); ax.set_xlabel(f"percentile among {p['group'][0]} prospects 2023–25 (higher = better) · band = 90% range from one rep")
-    ax.set_title(f"{name}  ·  {pos}  ·  pick {pick}  ·  Combine sensor card", loc="left", pad=14)
+    ax.axvline(50, color=GRID, lw=1); ax.set_xlabel(f"percentile among {p['group'][0]} prospects, 2023–25 (higher = better); band = 90% one-rep range")
+    ax.set_title(f"{name}  ·  {pos}  ·  pick {pick}  ·  Combine sensor card", loc="left", pad=28)
     ax.plot([], [], "o", color=C["blue"], label="trusted from one rep"); ax.plot([], [], "o", color=MUTED, label="needs more reps to trust")
-    ax.legend(loc="lower left", fontsize=8.5, ncol=2, bbox_to_anchor=(0, 1.0), frameon=False)
+    ax.legend(loc="lower left", fontsize=8.5, ncol=2, bbox_to_anchor=(0, 1.005), frameon=False)
     fig.tight_layout(); fig.savefig(FIGS / "fig7_prospect_card.png", dpi=160, bbox_inches="tight"); plt.close(fig)
 
 
