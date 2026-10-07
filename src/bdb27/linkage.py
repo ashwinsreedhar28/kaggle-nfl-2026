@@ -21,9 +21,10 @@ from .paths import DERIVED, PQ
 MIN_SNAPS = 100
 EDGE = {"DE", "OLB"}
 INTERIOR = {"DT", "NT"}
-CONTROLS = ["ten_yd_split", "combine_weight", "arm_length"]
+# weight + length + where scouts drafted him. ten_yd_split is NOT a control: 14/63 skipped the 40.
+CONTROLS = ["combine_weight", "arm_length", "draft_overall_pick"]
 FEATURES = ["move_time", "bend_dur", "bend_s_mean", "bend_index", "loopB_s_mean", "hoop1_s_mean",
-            "exit_s_peak", "asym_s", "three_cone", "short_shuttle", "ngs_athleticism_score"]
+            "exit_s_peak", "asym_s", "ten_yd_split", "forty", "three_cone", "short_shuttle", "ngs_athleticism_score"]
 OUTCOMES = {"pressure": "pressure_rate", "quick_pressure": "quick_pressure_rate", "sack": "sack_rate"}
 
 
@@ -37,7 +38,7 @@ def analysis_table() -> pl.DataFrame:
         pl.when(pl.col("nfl_position").is_in(EDGE)).then(pl.lit("EDGE"))
         .when(pl.col("nfl_position").is_in(INTERIOR)).then(pl.lit("IDL")).otherwise(pl.lit("OTHER")).alias("group"),
         pl.col("draft_overall_pick").fill_null(260),
-    )
+    ).with_columns(pl.col(pl.Float64).fill_nan(None))
     d.write_csv(DERIVED / "analysis_table.csv")
     missing = d.filter(pl.any_horizontal(pl.col(c).is_null() for c in CONTROLS))
     if missing.height:
