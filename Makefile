@@ -7,3 +7,4 @@ bend:      ; $(PY) -m bdb27.bend
 outcomes:  ; $(PY) -m bdb27.outcomes
 test:      ; $(PY) -m pytest -q tests/
 linkage:   ; $(PY) -m bdb27.linkage
+ingame:    ; $(PY) -m bdb27.ingame
