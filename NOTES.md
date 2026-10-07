@@ -19,7 +19,21 @@ Code: `features.py` (generic kinematics for every drill + test-retest ICC), `out
 - IDL pressure rate (n=24): tracking t_10yd −0.61, 40 a_max +0.56, lateral wave-drill speed +0.53, 3-cone −0.81 (n≈10). q 0.30 — suggestive only.
 - DB transition drill → in-game lateral accel +0.32 (q 0.09). Movement-to-movement only; the data has no DB production metrics.
 
-## Direction ranking vs judging rubric (Football 30 / DS 30 / Writeup 20 / Viz 20)
+## 40-yd dash decomposition + nested translation models (2026-10-07, later)
+Code: `forty.py` (mono-exponential sprint fit per attempt: vmax, tau, model splits, v10/v20), `translation.py` (nested LOO-R² models: controls / +stopwatch / +sensor / +both, by group; stage-2 production). Outputs `data/derived/forty_*.csv`, `translation_stage{1,2}.csv`.
+- Fit quality: median RMSE 0.16 yd/s over 793 attempts. Model-implied 40 time vs official forty r = 0.945 (+0.26 s offset: tracking onset precedes the clock). **vmax vs official forty r = −0.965** → the stopwatch 40 is a top-speed test. ICC: vmax 0.96, v10 0.92, v20 0.98, t40 0.87; tau 0.34 (unusable). Acceleration = v10 residualized on vmax.
+- **Stage 1 correction:** with proper nested models the sensor does NOT beat the stopwatch for in-game movement in any group (LOO-R² difference ≈ 0 everywhere). Within-group predictability of in-game top speed is low anyway: WR 0.37, EDGE 0.21 (mostly weight/draft), OL/IDL/DB/TE ≈ 0. In-game accel metrics ≈ unpredictable from the Combine. The earlier screen read ("sensor +0.41 vs stopwatch −0.37") was noise — retracted.
+- **Stage 2 (production):** EDGE pressure rate (n=31): vmax β=+0.19/SD (p .002) AND acceleration-independent-of-top-speed β=+0.13/SD (p .009); sensor deviance 76.7 < stopwatch 79.5 < controls 85.9. EDGE quick-pressure: same pattern (accel_resid p .017). IDL (n=22): both significant but stopwatch fits better. WR YAC-oe: vmax β −0.37 (p .007) but the single stopwatch forty predicts it better out of sample. OL pressure allowed: nothing.
+
+## Direction ranking vs judging rubric — REVISED after nested models
+**Story that the data actually supports: "What Combine sensors add — and don't."**
+1. The 40 is top speed (r² .93 vs stopwatch); re-timing it with sensors adds no incremental validity for game speed. (Non-obvious, clean, big n.)
+2. Most position drills are not reliable enough to evaluate a player from 1–2 reps (ICC map). Hoop drill curvature is the worked example: unmeasurable (1 rep) and non-transferring.
+3. Where sensors DO add: separating acceleration from top speed for pass rushers — the independent acceleration component predicts EDGE pressure beyond the stopwatch and draft slot. One actionable sensor number.
+4. WR YAC-over-expected falls with top speed (xYAC already prices speed) — figure, carefully framed.
+Rubric fit: Football — "which drills to trust, which number to pull" is week-to-week usable in draft season; DS — reliability + nested out-of-sample models + honest nulls; Viz — speed-curve small multiples, ICC heatmap, nested-R² bars, EDGE partial plot.
+
+## Direction ranking vs judging rubric (ORIGINAL, superseded above)
 1. **"Stopwatch vs sensor: what the 40 tracking adds, by position" — RECOMMENDED.** Foundation = reliability audit (which sensor features are even measurable); stage 1 = Combine → in-game speed/accel (n≈450, reliable instrument, sensor beats stopwatch, position-specific); stage 2 = production where it exists (IDL pressure via first-step burst; WR YAC-oe paradox). Hoop-drill null as the cautionary example. Fits host example #3 (drill translation). Viz: speed-curve small multiples by position, ICC heatmap, Combine-vs-game scatter, translation funnel. Risk: crowded idea; differentiate with reliability + in-game movement outcomes nobody else will compute.
 2. Measurement audit alone — top DS score, weaker Football score; better as the foundation of #1.
 3. IDL first-step burst → pressure — strong effects, n=24; a section of #1, not a standalone.
