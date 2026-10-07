@@ -3,12 +3,21 @@
 Source of truth for decisions. Newest at top. Format: date · who · decision · why.
 
 ## Open items
+- [ ] **DIRECTION DECISION (Ashwin + Joon):** hoop-drill bend failed the signal tests (see "Linkage v0 results"). Options on the table:
+  1. Drill-translation writeup on Run-the-Hoop: "scouted as a bend test, the tracking says its predictive content is straight-line burst/time, and mainly for interior DL." Cheap (code exists), honest, narrow; risk = small n (IDL 24) and a semi-negative headline.
+  2. Pivot to Idea #1 (route-drill break → separation). Needs a separation-over-expected model first (raw separation is confounded: every athletic trait correlates *negatively* with it). ~15–20 h outcome build; crowded idea space.
+  3. Pivot to a 40-yd-dash / acceleration-profile idea: the one trait that clearly transfers in our data is speed (10-yd split → in-game curvature-at-speed ρ = −0.74 within EDGE). Sensor-derived acceleration curve vs stopwatch splits, across all 5 position groups (n≈400), with in-game top speed / acceleration as the movement outcome and position-specific production as the football outcome. Host's "drill translation" example; bigger n; reuses the kinematics + ingame pipeline.
 - [ ] Joonyeoup accepts the Kaggle team invite; then add him to the GitHub repo (not before — Rules §3.5.d, §3.6.a).
-- [ ] Linkage model v0: does bend add over forty / 10-yd split / weight / NGS athleticism **within EDGE (DE/OLB)**? Mixed model or ridge with position-group control; bootstrap CIs. n≈63 total, ~39 EDGE — be honest about power.
-- [ ] Decide outcome: pressure_rate (n≈63, well-populated) vs ttp_median (only ~3.8k pressure rows total) — pressure_rate is primary, ttp secondary.
-- [ ] Reliability: hoop drill is 1 attempt/player, so no within-player ICC. Use PASS_RUSH_DRILL (217 attempts / 114 players, ~2 each) or FOUR_BAG_AGILITY as a second bend/COD measure for convergent validity.
 - [x] Kaggle team formed (Ashwin joined, invite sent). Data downloaded, converted.
-- [x] Gate passed (see below).
+- [x] Gate passed (see below). Linkage v0 run.
+
+## Linkage v0 results (2026-10-07) — bend does not transfer
+Code: `src/bdb27/linkage.py` (binomial GLM, controls = weight, arm length, draft overall pick; partial Spearman; bootstrap CI; LOO deviance), `src/bdb27/ingame.py` (in-game curvature-at-speed on pass-rush snaps from game tracking, snap → release window).
+- Controls changed from (10-yd split, weight, arm) to (weight, arm, draft pick) because 14/63 rushers skipped the 40. Draft pick = "what scouts already concluded"; the question becomes "does the drill add to the draft slot?"
+- **EDGE (n=39):** bend_index partial ρ = +0.01 vs pressure rate, LOO deviance +8.2 (worse). bend_s_mean, bend_dur, move_time, asym_s all ≈ 0. What *does* add: ten_yd_split (partial ρ −0.44, LOO −12.2), ngs_athleticism_score (+0.36, LOO −2.4). Same picture for quick_pressure and sack rate.
+- **IDL (n=24):** move_time partial ρ −0.62 (LOO −12.5), exit_s_peak +0.62 (LOO −15.3), also on sack rate (−8.7 / −9.6). bend_index +0.35 ns (LOO +7.2). Straight-line components carry the signal, not curvature. Fragile n.
+- **Combine → in-game movement (EDGE):** bend_index → in-game ac_med ρ +0.10 raw / −0.09 partial. ten_yd_split → in-game ac ρ −0.74 raw / −0.42 partial. In-game s·ω is speed-dominated; the hoop drill's curvature does not show up on Sundays.
+- Idea #1 quick check (WR/TE, n=64 with ≥30 REG targets): raw mean separation is confounded — forty partial ρ +0.29 (slower = more separation), route-drill reaccel −0.35, peak lateral accel −0.46. Any separation outcome must be modeled over expectation (route, depth, cushion, man/zone, alignment) first.
 
 ## Decisions
 
