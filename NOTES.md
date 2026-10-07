@@ -25,6 +25,11 @@ Code: `forty.py` (mono-exponential sprint fit per attempt: vmax, tau, model spli
 - **Stage 1 correction:** with proper nested models the sensor does NOT beat the stopwatch for in-game movement in any group (LOO-R² difference ≈ 0 everywhere). Within-group predictability of in-game top speed is low anyway: WR 0.37, EDGE 0.21 (mostly weight/draft), OL/IDL/DB/TE ≈ 0. In-game accel metrics ≈ unpredictable from the Combine. The earlier screen read ("sensor +0.41 vs stopwatch −0.37") was noise — retracted.
 - **Stage 2 (production):** EDGE pressure rate (n=31): vmax β=+0.19/SD (p .002) AND acceleration-independent-of-top-speed β=+0.13/SD (p .009); sensor deviance 76.7 < stopwatch 79.5 < controls 85.9. EDGE quick-pressure: same pattern (accel_resid p .017). IDL (n=22): both significant but stopwatch fits better. WR YAC-oe: vmax β −0.37 (p .007) but the single stopwatch forty predicts it better out of sample. OL pressure allowed: nothing.
 
+## Stage-2 retraction + figures (2026-10-07, evening)
+- **Retracted:** the EDGE pressure "sensor acceleration" result. The snaps-as-trials binomial GLM ignores player-level overdispersion; player-level robust OLS gives vmax p=0.50, accel_resid p=0.43 (n=31). Stage 2 now = one row per player, OLS HC3 + snap-weighted WLS, standardized betas with CIs (`translation_stage2.csv`).
+- Surviving production signals: IDL pressure ↑ with 40 speed (stopwatch +0.97 SD, sensor vmax +0.55 SD, n=22); WR YAC-oe ↓ with top speed (−0.46 SD, n=44). Seven other cells null.
+- Six figures rendered in `reports/figures/` (fig1–fig6); writeup outline + rubric scorecard in `reports/writeup_outline.md`. Audit story scores 7.2/10 on our own rubric grading; next-best alternative 5.6.
+
 ## Direction ranking vs judging rubric — REVISED after nested models
 **Story that the data actually supports: "What Combine sensors add — and don't."**
 1. The 40 is top speed (r² .93 vs stopwatch); re-timing it with sensors adds no incremental validity for game speed. (Non-obvious, clean, big n.)
