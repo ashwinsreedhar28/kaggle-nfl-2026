@@ -31,7 +31,7 @@ def attempt_metrics(df: pl.DataFrame) -> dict | None:
     """df: one attempt's PLAYER frames sorted by time."""
     if df.height < 15:
         return None
-    t = (df["time"].cast(pl.Int64).to_numpy() / 1e6)  # Datetime[us] -> seconds
+    t = df["time"].dt.epoch("us").to_numpy() / 1e6  # unit-safe -> seconds
     t = t - t[0]
     x, y = df["x"].to_numpy(), df["y"].to_numpy()
     s, a = df["s"].to_numpy().astype(float), df["a"].to_numpy().astype(float)
