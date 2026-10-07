@@ -224,8 +224,45 @@ def fig7_prospect_card(nfl_id: int | None = None):
     fig.tight_layout(); fig.savefig(FIGS / "fig7_prospect_card.png", dpi=160, bbox_inches="tight"); plt.close(fig)
 
 
+def fig8_report_card():
+    """The Combine Sensor Report Card as a figure: usable rows, ICC with 95% CI, reps to 0.8, one-rep band, verdict."""
+    rc = pl.read_csv(DERIVED / "report_card.csv")
+    rel = pl.read_csv(DERIVED / "drill_reliability.csv").select("drill_name", "feature", "icc_lo", "icc_hi")
+    from .reportcard import NICE
+    rel = rel.with_columns(pl.col("feature").replace_strict(NICE, default=None)).rename({"drill_name": "drill"})
+    me = pl.read_csv(DERIVED / "measurement_error.csv").select("drill", "feature", "band90_pctile_pts", "mdd_pctile_pts")
+    rc = rc.join(rel, on=["drill", "feature"], how="left").join(me, on=["drill", "feature"], how="left")
+    rc = rc.filter(~pl.col("verdict").str.starts_with("DON'T") & ~pl.col("verdict").str.starts_with("NEEDS")).sort("icc", descending=True)
+    vcol = {"USE": C["aqua"], "REDUNDANT with stopwatch": C["yellow"]}
+    n = rc.height
+    fig, ax = plt.subplots(figsize=(12.5, 0.42 * n + 2.2))
+    ax.set_xlim(0, 1.0); ax.set_ylim(-0.8, n - 0.2); ax.set_yticks([]); ax.grid(axis="y", visible=False)
+    ax.axvspan(0.8, 1.0, color=C["aqua"], alpha=0.06, lw=0); ax.axvline(0.8, color=C["aqua"], lw=1, ls="--")
+    ax.text(0.805, n - 0.45, "reliable from one rep (ICC ≥ 0.8)", color=C["aqua"], fontsize=8.5, va="top")
+    for i, r in enumerate(rc.to_dicts()):
+        y = n - 1 - i
+        col = vcol.get(r["verdict"], C["blue"])
+        ax.plot([r["icc_lo"], r["icc_hi"]], [y, y], color=col, lw=2, alpha=0.6, solid_capstyle="round")
+        ax.plot(r["icc"], y, "o", color=col, ms=7, mec=SURF, mew=0.8)
+        lab = f'{r["drill"].replace("_", " ").title().replace(" 45 Degree Reaction", "")[:30]} · {r["feature"]}'
+        ax.text(-0.01, y, lab, ha="right", va="center", fontsize=9, color=INK)
+        reps = "1" if r["icc"] >= 0.8 else f'{int(np.ceil(r["reps_for_0.8"]))}'
+        band = f'±{int(r["band90_pctile_pts"])}' if r["band90_pctile_pts"] is not None else "—"
+        mdd = f'{int(r["mdd_pctile_pts"])}' if r["mdd_pctile_pts"] is not None else "—"
+        red = f'{r["redundancy_stopwatch"]:.2f}'
+        for x, s_ in ((1.03, reps), (1.12, band), (1.22, mdd), (1.31, red)):
+            ax.text(x, y, s_, va="center", ha="center", fontsize=9, color=INK2, family="monospace", transform=ax.get_yaxis_transform())
+        ax.text(1.39, y, r["verdict"].lower(), va="center", ha="left", fontsize=8.5, color=col, fontweight="bold", transform=ax.get_yaxis_transform())
+    hdr_y = n - 0.1
+    for x, s_ in ((1.03, "reps\nto 0.8"), (1.12, "1-rep band\n(pctile pts)"), (1.22, "MDD\n(pctile pts)"), (1.31, "|r| vs\nstopwatch"), (1.42, "verdict")):
+        ax.text(x, hdr_y, s_, va="bottom", ha="center" if x < 1.4 else "left", fontsize=8, color=MUTED, transform=ax.get_yaxis_transform())
+    ax.set_xlabel("test-retest reliability of a single rep (ICC, 95% bootstrap CI)")
+    ax.set_title(f"Combine Sensor Report Card — the {n} sensor features worth collecting (36 others: don't use)", loc="left", pad=22)
+    fig.tight_layout(); fig.savefig(FIGS / "fig8_report_card.png", dpi=160, bbox_inches="tight"); plt.close(fig)
+
+
 def main() -> None:
-    for f in (fig1_forty_curves, fig2_reliability, fig3_nested_r2, fig4_production_forest, fig5_hoop_null, fig6_yac, fig7_prospect_card):
+    for f in (fig1_forty_curves, fig2_reliability, fig3_nested_r2, fig4_production_forest, fig5_hoop_null, fig6_yac, fig7_prospect_card, fig8_report_card):
         f(); print("ok", f.__name__)
 
 
