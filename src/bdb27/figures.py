@@ -196,8 +196,35 @@ def fig6_yac():
     fig.tight_layout(); fig.savefig(FIGS / "fig6_yac_paradox.png", dpi=160); plt.close(fig)
 
 
+def fig7_prospect_card(nfl_id: int | None = None):
+    """One prospect, every usable sensor feature as a within-position percentile with its one-rep 90% band."""
+    c = pl.read_csv(DERIVED / "prospect_cards_bands.csv")
+    if nfl_id is None:  # pick a 2025 DB with the three trusted features
+        ok = c.filter((c["group"] == "DB") & (c["draft_year"] == 2025) & c["drill"].str.contains("BACK_PEDAL")).group_by("nfl_id").len().filter(pl.col("len") == 3)
+        nfl_id = int(ok["nfl_id"][0])
+    p = c.filter(pl.col("nfl_id") == nfl_id).filter(~pl.col("verdict").str.starts_with("REDUNDANT") | (pl.col("feature") == "top speed"))
+    tier = {"USE": 0, "REDUNDANT with stopwatch": 0}
+    p = p.with_columns(pl.col("verdict").replace_strict(tier, default=1).alias("tier")).sort("tier", "pctile_hi", descending=[False, True])
+    name, pos, pick = p["display_name"][0], p["nfl_position"][0], p["draft_overall_pick"][0]
+    fig, ax = plt.subplots(figsize=(9, 0.5 * p.height + 1.8))
+    for i, r in enumerate(p.to_dicts()):
+        y = p.height - 1 - i
+        trusted = r["tier"] == 0
+        col = C["blue"] if trusted else MUTED
+        ax.plot([r["pctile_lo"], r["pctile_hi"]], [y, y], color=col, lw=6, alpha=0.25, solid_capstyle="round")
+        ax.plot(r["pctile"], y, "o", color=col, ms=9, mec=SURF, mew=1)
+        ax.text(102, y, f'{int(r["pctile"])}  ({int(r["pctile_lo"])}–{int(r["pctile_hi"])})', va="center", fontsize=9, color=INK2, family="monospace")
+        lab = f'{r["drill"].replace("_", " ").title().replace("45 Degree Reaction", "")[:30]} · {r["feature"]}'
+        ax.text(-3, y, lab + ("" if trusted else f'   [{r["verdict"].lower()}]'), ha="right", va="center", fontsize=9, color=INK if trusted else MUTED)
+    ax.set_xlim(0, 100); ax.set_ylim(-0.7, p.height - 0.3); ax.set_yticks([]); ax.grid(axis="y", visible=False)
+    ax.axvline(50, color=GRID, lw=1); ax.set_xlabel(f"percentile among {p['group'][0]} prospects 2023–25 · band = 90% range a single rep can move the true value")
+    ax.set_title(f"{name}  ·  {pos}  ·  pick {pick}  ·  Combine sensor card", loc="left")
+    ax.text(0, p.height - 0.1, "trusted from one rep", color=C["blue"], fontsize=8.5, fontweight="bold", transform=ax.transData)
+    fig.tight_layout(); fig.savefig(FIGS / "fig7_prospect_card.png", dpi=160, bbox_inches="tight"); plt.close(fig)
+
+
 def main() -> None:
-    for f in (fig1_forty_curves, fig2_reliability, fig3_nested_r2, fig4_production_forest, fig5_hoop_null, fig6_yac):
+    for f in (fig1_forty_curves, fig2_reliability, fig3_nested_r2, fig4_production_forest, fig5_hoop_null, fig6_yac, fig7_prospect_card):
         f(); print("ok", f.__name__)
 
 
