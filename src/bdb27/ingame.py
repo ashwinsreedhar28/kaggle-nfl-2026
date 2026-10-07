@@ -19,15 +19,13 @@ def rush_frames(year: int, rush_keys: pl.LazyFrame) -> pl.LazyFrame:
     gt = pl.scan_parquet(PQ / f"game_tracking_{year}.parquet")
     gt = gt.join(rush_keys, on=["game_id", "play_id", "nfl_id"], how="semi")
     key = ["game_id", "play_id", "nfl_id"]
+    ev = pl.col("event").fill_null("")
     gt = gt.sort(*key, "time").with_columns(
-        (pl.col("event") == "ball_snap").cum_sum().over(key).alias("_after_snap"),
-        pl.col("event").is_in(END_EVENTS).cum_sum().over(key).alias("_after_end"),
+        (ev == "ball_snap").cast(pl.Int32).cum_sum().over(key).alias("_after_snap"),
+        # counts END events strictly before this frame, so the end frame itself is kept
+        ev.is_in(END_EVENTS).cast(pl.Int32).cum_sum().over(key).shift(1, fill_value=0).over(key).alias("_ends_before"),
     )
-    # keep frames from snap up to and including the end event
-    gt = gt.filter((pl.col("_after_snap") >= 1) & (pl.col("_after_end") <= 1)).filter(
-        ~((pl.col("_after_end") == 1) & ~pl.col("event").is_in(END_EVENTS))
-        | (pl.col("_after_end") == 0)
-    )
+    gt = gt.filter((pl.col("_after_snap") >= 1) & (pl.col("_ends_before") == 0))
     ddir = ((pl.col("dir") - pl.col("dir").shift(1).over(key) + 180.0) % 360.0 - 180.0)
     return gt.with_columns(
         (ddir.radians() / 0.1).abs().alias("omega"),
