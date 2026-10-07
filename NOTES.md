@@ -3,8 +3,11 @@
 Source of truth for decisions. Newest at top. Format: date · who · decision · why.
 
 ## Open items
-- [ ] **DIRECTION DECISION (Ashwin + Joon):** see "Direction ranking" below. Recommendation = #1 (stopwatch vs sensor on the 40, by position, on a reliability foundation).
-- [ ] Joonyeoup accepts the Kaggle team invite; then add him to the GitHub repo (not before — Rules §3.5.d, §3.6.a).
+- [ ] **DIRECTION DECISION (Ashwin + Joon, 2026-10-07 evening):** adopt the measurement-audit story ("What Combine sensors add — and don't") with the Report Card as centerpiece? See "Usability layer" + `reports/writeup_outline.md` scorecard.
+- [ ] Cheap tests before locking (≤2 h each): (a) DB transition drill → in-game change-of-direction on coverage snaps; (b) Gauntlet splits → WR outcomes; (c) game-speed index figure for WR/TE only.
+- [ ] Fig 7 = Report Card figure; bootstrap CIs on ICCs and ΔR².
+- [ ] Public Kaggle notebook that regenerates every figure from `data/derived/*.csv` (owner: TBD).
+- [x] Joon on the Kaggle team and the GitHub repo (2026-10-07).
 - [x] Kaggle team formed (Ashwin joined, invite sent). Data downloaded, converted.
 - [x] Gate passed (see below). Linkage v0 run.
 
