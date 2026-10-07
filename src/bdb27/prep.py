@@ -22,7 +22,13 @@ def _convert(name: str) -> None:
         print(f"  skip {name}: {src} missing")
         return
     t0 = time.time()
-    lf = pl.scan_csv(src, infer_schema_length=10_000, try_parse_dates=False)
+    # files use R-style "NA" for nulls; infer schema on the whole file for the
+    # wide player_play table (many sparse columns) and a large sample otherwise
+    lf = pl.scan_csv(
+        src,
+        null_values=["NA", "", "NaN"],
+        infer_schema_length=None if name == "player_play" else 100_000,
+    )
     # tracking timestamps: ISO 8601 with milliseconds -> Datetime
     if "time" in lf.collect_schema().names():
         lf = lf.with_columns(
