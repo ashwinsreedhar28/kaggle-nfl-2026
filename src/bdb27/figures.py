@@ -156,12 +156,12 @@ def fig4_production_forest():
         n = s2.filter((pl.col("group") == g) & (pl.col("outcome") == oc))["n"]
         yt.append(y0); yl.append(f"{lab}  (n={n[0] if len(n) else '—'})")
     ax.axvline(0, color="#c3c2b7", lw=1); ax.set_yticks(yt); ax.set_yticklabels(yl, fontsize=9)
-    ax.set_xlabel("standardized effect of being FASTER (SD of outcome per SD of feature), adjusted for weight & draft slot; 95% CI")
+    ax.set_xlabel("effect of being faster: SD of outcome per SD of feature, adjusted for weight & draft slot (95% CI)")
     ax.grid(axis="y", visible=False)
     for feat in ["forty", "vmax", "accel_resid"]:
         ax.plot([], [], "o-", color=colors[feat], label=labels[feat])
     ax.legend(loc="lower right", fontsize=8.5, ncol=1)
-    ax.set_title("Does Combine speed predict production once you know weight and draft slot? Mostly no.", loc="left")
+    ax.set_title("Combine speed vs. production, after weight and draft slot: two signals, seven nulls", loc="left")
     fig.tight_layout(); fig.savefig(FIGS / "fig4_production_forest.png", dpi=160); plt.close(fig)
 
 
