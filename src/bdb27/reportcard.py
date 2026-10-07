@@ -7,7 +7,8 @@ One row per (drill, sensor feature) with:
   transfer_move  partial Spearman with in-game top speed within the drill's position group,
                  after weight + draft slot + stopwatch (incremental over what scouts already have)
   transfer_prod  best |partial rho| with a production outcome for that group (from screen.csv), with q
-  verdict        USE / USE WITH 2+ REPS / REDUNDANT / DON'T USE
+  verdict        RELIABLE + TRANSFERS / RELIABLE, transfer unproven / USE WITH k+ REPS / NEEDS k REPS / REDUNDANT / DON'T USE
+                 (reliability is necessary, not sufficient: the DB transition drill is ICC 0.90 and predicts nothing in-game)
 Also writes a per-player prospect card table using only USE-tier features (within-position percentiles)
 and the game-speed index (in-game top speed minus Combine top speed, position-adjusted).
 
@@ -97,8 +98,9 @@ def main() -> None:
             else:
                 prod, prod_rho, prod_q = "—", np.nan, np.nan
             k = reps_needed(icc)
+            transfers = (not np.isnan(p_m) and p_m < 0.05 and abs(rho_m) >= 0.25) or (not np.isnan(prod_q) and prod_q < 0.10)
             if icc >= 0.8:
-                verdict = "REDUNDANT with stopwatch" if red >= 0.9 else "USE"
+                verdict = "REDUNDANT with stopwatch" if red >= 0.9 else ("RELIABLE + TRANSFERS" if transfers else "RELIABLE, transfer unproven")
             elif icc >= 0.5:
                 verdict = f"USE WITH {int(np.ceil(k))}+ REPS"
             else:
@@ -113,7 +115,7 @@ def main() -> None:
         print(rc.select("drill", "feature", "group", "icc", "reps_for_0.8", "redundancy_stopwatch", "transfer_move_rho", "transfer_move_p", "verdict"))
 
     # ---- prospect cards: USE-tier features as within-position percentiles ----
-    use_feats = [(r["drill"], r["feature"]) for r in rc.filter(pl.col("verdict") == "USE").to_dicts()]
+    use_feats = [(r["drill"], r["feature"]) for r in rc.filter(pl.col("verdict").str.starts_with("RELIABLE")).to_dicts()]
     inv = {v: k for k, v in NICE.items()}
     cards = out.select("nfl_id", "display_name", "nfl_position", "group", "draft_year", "draft_overall_pick", "forty", "combine_weight")
     for dn, nice in use_feats:

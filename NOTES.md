@@ -28,6 +28,13 @@ Code: `forty.py` (mono-exponential sprint fit per attempt: vmax, tau, model spli
 - **Stage 1 correction:** with proper nested models the sensor does NOT beat the stopwatch for in-game movement in any group (LOO-R² difference ≈ 0 everywhere). Within-group predictability of in-game top speed is low anyway: WR 0.37, EDGE 0.21 (mostly weight/draft), OL/IDL/DB/TE ≈ 0. In-game accel metrics ≈ unpredictable from the Combine. The earlier screen read ("sensor +0.41 vs stopwatch −0.37") was noise — retracted.
 - **Stage 2 (production):** EDGE pressure rate (n=31): vmax β=+0.19/SD (p .002) AND acceleration-independent-of-top-speed β=+0.13/SD (p .009); sensor deviance 76.7 < stopwatch 79.5 < controls 85.9. EDGE quick-pressure: same pattern (accel_resid p .017). IDL (n=22): both significant but stopwatch fits better. WR YAC-oe: vmax β −0.37 (p .007) but the single stopwatch forty predicts it better out of sample. OL pressure allowed: nothing.
 
+## DB transition drill → in-game change of direction (2026-10-07, late) — `db_transition.py`
+- In-game COD signature per DB on coverage snaps (REG, snap → pass_arrived): max decel at speed, max re-accel, lateral accel, trough ratio; medians over ≥40 plays. 74 DBs with the drill; 64 with the 40 too.
+- **Null.** Nested LOO-R² for all four in-game COD outcomes is *lower* with the drill features than with controls alone (e.g. decel −0.05 → −0.15). The only reliable position drill does not predict measurable game movement.
+- Career-snap correlations (drill max accel −0.36, p .002) point the wrong way and mix CB/FS/SS roles — not claimed.
+- **Paper point: reliable ≠ valid.** Report Card verdicts now split "RELIABLE + TRANSFERS" vs "RELIABLE, transfer unproven". Today nothing earns the former.
+- ICCs now carry bootstrap 95% CIs (`drill_reliability.csv`), shown on Fig 8 (Report Card figure).
+
 ## Scout-facing layer (2026-10-07, late) — `usability.py`, fig7
 - **Measurement error per feature** (`measurement_error.csv`): SEM = SD·√(1−ICC); 90% one-rep band; minimum detectable difference MDD = 1.96·√2·SEM; both also in within-position percentile points. Headline: one-rep 90% band is ±8 pctile pts for 40 top speed, ±18 for the DB transition features, ±29–44 for everything else usable. MDD: two prospects must differ by 18 pctile pts on top speed, 37–52 on most other features, before the gap is real.
 - **Prospect cards with bands** (`prospect_cards_bands.csv`, 475 players × 20 features): value, within-group percentile (time features flipped so higher = better), percentile band shrinking with reps (SEM/√k). Fig 7 = one card; the sell for usability.

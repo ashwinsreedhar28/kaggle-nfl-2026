@@ -203,8 +203,7 @@ def fig7_prospect_card(nfl_id: int | None = None):
         ok = c.filter((c["group"] == "DB") & (c["draft_year"] == 2025) & c["drill"].str.contains("BACK_PEDAL")).group_by("nfl_id").len().filter(pl.col("len") == 3)
         nfl_id = int(ok["nfl_id"][0])
     p = c.filter(pl.col("nfl_id") == nfl_id).filter(~pl.col("verdict").str.starts_with("REDUNDANT") | (pl.col("feature") == "top speed"))
-    tier = {"USE": 0, "REDUNDANT with stopwatch": 0}
-    p = p.with_columns(pl.col("verdict").replace_strict(tier, default=1).alias("tier")).sort("tier", "pctile_hi", descending=[False, True])
+    p = p.with_columns(pl.when(pl.col("verdict").str.starts_with("RELIABLE") | pl.col("verdict").str.starts_with("REDUNDANT")).then(0).otherwise(1).alias("tier")).sort("tier", "pctile_hi", descending=[False, True])
     name, pos, pick = p["display_name"][0], p["nfl_position"][0], p["draft_overall_pick"][0]
     fig, ax = plt.subplots(figsize=(9, 0.5 * p.height + 1.8))
     for i, r in enumerate(p.to_dicts()):
@@ -233,7 +232,7 @@ def fig8_report_card():
     me = pl.read_csv(DERIVED / "measurement_error.csv").select("drill", "feature", "band90_pctile_pts", "mdd_pctile_pts")
     rc = rc.join(rel, on=["drill", "feature"], how="left").join(me, on=["drill", "feature"], how="left")
     rc = rc.filter(~pl.col("verdict").str.starts_with("DON'T") & ~pl.col("verdict").str.starts_with("NEEDS")).sort("icc", descending=True)
-    vcol = {"USE": C["aqua"], "REDUNDANT with stopwatch": C["yellow"]}
+    vcol = {"RELIABLE + TRANSFERS": C["aqua"], "RELIABLE, transfer unproven": C["aqua"], "REDUNDANT with stopwatch": C["yellow"]}
     n = rc.height
     fig, ax = plt.subplots(figsize=(13.5, 0.42 * n + 2.2))
     ax.set_xlim(0, 1.0); ax.set_ylim(-0.8, n - 0.2); ax.set_yticks([]); ax.grid(axis="y", visible=False)
