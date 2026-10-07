@@ -98,9 +98,17 @@ def main() -> None:
             if x.height < 16:
                 continue
             grp = x.group_by("nfl_id").agg(pl.col(f).mean().alias("m"), pl.col(f).var().alias("v"), pl.len().alias("k"))
-            within = float(grp["v"].mean()); between = float(grp["m"].var()); kbar = float(grp["k"].mean())
-            icc = (between - within / kbar) / (between + within * (1 - 1 / kbar)) if between + within > 0 else np.nan
-            rel.append({"drill_name": dn, "feature": f, "players": grp.height, "icc": round(icc, 3)})
+            m, v, k = grp["m"].to_numpy(), grp["v"].to_numpy(), grp["k"].to_numpy().astype(float)
+
+            def icc_of(idx):
+                within = np.nanmean(v[idx]); between = np.var(m[idx], ddof=1); kbar = k[idx].mean()
+                return (between - within / kbar) / (between + within * (1 - 1 / kbar)) if between + within > 0 else np.nan
+
+            icc = icc_of(np.arange(len(m)))
+            rng = np.random.default_rng(0)
+            boots = np.array([icc_of(rng.integers(0, len(m), len(m))) for _ in range(500)])
+            lo, hi = np.nanpercentile(boots, [2.5, 97.5])
+            rel.append({"drill_name": dn, "feature": f, "players": grp.height, "icc": round(float(icc), 3), "icc_lo": round(float(lo), 3), "icc_hi": round(float(hi), 3)})
     rel = pl.DataFrame(rel).sort("drill_name", "icc", descending=[False, True])
     rel.write_csv(DERIVED / "drill_reliability.csv")
     print(f"attempts: {att.height}, player-drill rows: {players.height}")
