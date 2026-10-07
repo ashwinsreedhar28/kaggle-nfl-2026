@@ -14,3 +14,4 @@ screen:    ; $(PY) -m bdb27.screen
 forty:     ; $(PY) -m bdb27.forty
 translation: ; $(PY) -m bdb27.translation
 figures:   ; $(PY) -m bdb27.figures
+reportcard: ; $(PY) -m bdb27.reportcard
