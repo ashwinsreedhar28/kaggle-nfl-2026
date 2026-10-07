@@ -39,7 +39,10 @@ def analysis_table() -> pl.DataFrame:
         pl.col("draft_overall_pick").fill_null(260),
     )
     d.write_csv(DERIVED / "analysis_table.csv")
-    return d
+    missing = d.filter(pl.any_horizontal(pl.col(c).is_null() for c in CONTROLS))
+    if missing.height:
+        print(f"dropping {missing.height} rows with null controls:", missing.select("display_name", *CONTROLS).to_dicts())
+    return d.drop_nulls(CONTROLS)
 
 
 def _design(df: pl.DataFrame, cols: list[str]) -> np.ndarray:
