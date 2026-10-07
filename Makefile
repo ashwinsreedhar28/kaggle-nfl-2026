@@ -10,3 +10,4 @@ linkage:   ; $(PY) -m bdb27.linkage
 ingame:    ; $(PY) -m bdb27.ingame
 features:  ; $(PY) -m bdb27.features
 outcomes_all: ; $(PY) -m bdb27.outcomes_all
+screen:    ; $(PY) -m bdb27.screen
