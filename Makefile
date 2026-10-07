@@ -6,3 +6,4 @@ eda:       ; $(PY) -m bdb27.eda
 bend:      ; $(PY) -m bdb27.bend
 outcomes:  ; $(PY) -m bdb27.outcomes
 test:      ; $(PY) -m pytest -q tests/
+linkage:   ; $(PY) -m bdb27.linkage
