@@ -3,13 +3,31 @@
 Source of truth for decisions. Newest at top. Format: date · who · decision · why.
 
 ## Open items
-- [ ] **DIRECTION DECISION (Ashwin + Joon):** hoop-drill bend failed the signal tests (see "Linkage v0 results"). Options on the table:
-  1. Drill-translation writeup on Run-the-Hoop: "scouted as a bend test, the tracking says its predictive content is straight-line burst/time, and mainly for interior DL." Cheap (code exists), honest, narrow; risk = small n (IDL 24) and a semi-negative headline.
-  2. Pivot to Idea #1 (route-drill break → separation). Needs a separation-over-expected model first (raw separation is confounded: every athletic trait correlates *negatively* with it). ~15–20 h outcome build; crowded idea space.
-  3. Pivot to a 40-yd-dash / acceleration-profile idea: the one trait that clearly transfers in our data is speed (10-yd split → in-game curvature-at-speed ρ = −0.74 within EDGE). Sensor-derived acceleration curve vs stopwatch splits, across all 5 position groups (n≈400), with in-game top speed / acceleration as the movement outcome and position-specific production as the football outcome. Host's "drill translation" example; bigger n; reuses the kinematics + ingame pipeline.
+- [ ] **DIRECTION DECISION (Ashwin + Joon):** see "Direction ranking" below. Recommendation = #1 (stopwatch vs sensor on the 40, by position, on a reliability foundation).
 - [ ] Joonyeoup accepts the Kaggle team invite; then add him to the GitHub repo (not before — Rules §3.5.d, §3.6.a).
 - [x] Kaggle team formed (Ashwin joined, invite sent). Data downloaded, converted.
 - [x] Gate passed (see below). Linkage v0 run.
+
+## Broad screen (2026-10-07) — what the Combine tracking actually predicts
+Code: `features.py` (generic kinematics for every drill + test-retest ICC), `outcomes_all.py` (all groups: pass rush, pass pro, receiving incl. separation-over-expected and YAC-over-expected, in-game top speed/accel from 8.8M frames, career), `screen.py` (4,637 partial-Spearman tests controlling weight + draft pick, BH-FDR per group). Outputs in `data/derived/{drill_reliability,screen}.csv`.
+
+**Reliability (ICC, players with ≥2 attempts):** 40-yd dash top speed 0.985 (n=375); DB BACK_PEDAL_AND_TRANSITION duration 0.90, trough speed 0.84, max accel 0.81 (n=119); 40 t_20yd 0.73; Gauntlet t_20yd 0.69; PASS_RUSH_DRILL trough speed 0.71. Almost everything else < 0.5 → a single rep of most position drills is mostly noise. Hoop drill = 1 rep, unmeasurable.
+
+**Survivors (q<0.10, |ρ|>0.3): 23 of 4,637.** Nothing for EDGE pressure, OL pass pro, or receiver separation-over-expected.
+- Combine → in-game top speed (ig_s_p95), partial ρ, tracking vs stopwatch: WR s_peak +0.41 vs forty −0.37; TE s_peak +0.53 vs forty −0.44; EDGE first-second accel (a_mean_1s) +0.41 / t_10yd −0.33 vs forty −0.23 / ten split −0.14; DB ≈ 0.2 both; OL/IDL ≈ 0.1–0.25. → **Sensor beats stopwatch, and *which* part of the 40 matters is position-specific (top speed for WR/TE, acceleration for EDGE).**
+- WR YAC over expected vs 40 top speed: −0.54 (q 0.044). Faster WRs underperform NGS xYAC. Likely because xYAC already prices in speed at the catch → the residual rewards elusiveness/vision, which no Combine drill measures. Non-obvious; must be framed carefully.
+- IDL pressure rate (n=24): tracking t_10yd −0.61, 40 a_max +0.56, lateral wave-drill speed +0.53, 3-cone −0.81 (n≈10). q 0.30 — suggestive only.
+- DB transition drill → in-game lateral accel +0.32 (q 0.09). Movement-to-movement only; the data has no DB production metrics.
+
+## Direction ranking vs judging rubric (Football 30 / DS 30 / Writeup 20 / Viz 20)
+1. **"Stopwatch vs sensor: what the 40 tracking adds, by position" — RECOMMENDED.** Foundation = reliability audit (which sensor features are even measurable); stage 1 = Combine → in-game speed/accel (n≈450, reliable instrument, sensor beats stopwatch, position-specific); stage 2 = production where it exists (IDL pressure via first-step burst; WR YAC-oe paradox). Hoop-drill null as the cautionary example. Fits host example #3 (drill translation). Viz: speed-curve small multiples by position, ICC heatmap, Combine-vs-game scatter, translation funnel. Risk: crowded idea; differentiate with reliability + in-game movement outcomes nobody else will compute.
+2. Measurement audit alone — top DS score, weaker Football score; better as the foundation of #1.
+3. IDL first-step burst → pressure — strong effects, n=24; a section of #1, not a standalone.
+4. Hoop drill-translation (negative) — one paragraph + one figure in #1.
+5. WR YAC-oe paradox — one figure in #1; model-artifact risk.
+6. Route break → separation-over-expected — null (all partials ≈ 0). Drop.
+7. DB transition drill — reliable instrument, no production outcome in data. Appendix at most.
+8. OL drills → pass protection — noise. Drop.
 
 ## Linkage v0 results (2026-10-07) — bend does not transfer
 Code: `src/bdb27/linkage.py` (binomial GLM, controls = weight, arm length, draft overall pick; partial Spearman; bootstrap CI; LOO deviance), `src/bdb27/ingame.py` (in-game curvature-at-speed on pass-rush snaps from game tracking, snap → release window).
