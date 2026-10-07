@@ -62,7 +62,7 @@ Everyone else will build a new sensor metric and claim it predicts the NFL. We a
 | 4 | fig4_production_forest.png | Standardized production effects, 9 cells × 3 features | done |
 | 5 | fig5_hoop_null.png | Hoop bend index vs in-game curvature & pressure | done |
 | 6 | fig6_yac_paradox.png | WR YAC-oe vs top speed | done |
-| 7 | (table) | Headline numbers: r, ICC, ΔR², effect sizes | todo |
+| 7 | report_card.csv → table/figure | Combine Sensor Report Card: ICC · reps to 0.8 · redundancy · transfer · verdict (67 rows; show the ~30 non-DON'T-USE rows) | data done, figure todo |
 | 8 | hoop drill path / speed-curve anatomy | one illustrative tracking figure for the reader who hasn't seen the data | optional |
 
 ## Open questions for the two of us
