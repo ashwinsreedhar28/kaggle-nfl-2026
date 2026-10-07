@@ -21,6 +21,7 @@ from .paths import DERIVED, PQ
 from .reportcard import NICE, DRILL_GROUP, group_expr
 
 Z90 = norm.ppf(0.95)
+LOWER_BETTER = {"drill time", "time to 10 yd", "time to 20 yd"}  # oriented so higher percentile = better
 
 
 def measurement_error() -> pl.DataFrame:
@@ -66,13 +67,17 @@ def prospect_cards_with_bands(me: pl.DataFrame) -> pl.DataFrame:
         if r["group"] != "ALL":
             d = d.filter(pl.col("group") == r["group"])
         d = d.drop_nulls("value")
-        # percentile within group; band shrinks with reps: SEM_k = SEM / sqrt(k)
-        d = d.with_columns(((pl.col("value").rank("average") - 1) / (pl.len() - 1) * 100).over("group").round(0).alias("pctile"))
-        sem_k = r["sem"] / np.sqrt(d["n_att"].to_numpy())
-        vals = d["value"].to_numpy()
-        lo = np.array([float((vals < v - Z90 * s).mean() * 100) for v, s in zip(vals, sem_k)])
-        hi = np.array([float((vals < v + Z90 * s).mean() * 100) for v, s in zip(vals, sem_k)])
-        d = d.with_columns(pl.Series("pctile_lo", lo.round(0)), pl.Series("pctile_hi", hi.round(0)),
+        sign = -1.0 if r["feature"] in LOWER_BETTER else 1.0
+        d = d.with_columns((pl.col("value") * sign).alias("_v"))
+        # percentile within the player's own position group; band shrinks with reps: SEM_k = SEM / sqrt(k)
+        parts = []
+        for (grp,), g in d.group_by(["group"]):
+            vals = g["_v"].to_numpy(); sem_k = r["sem"] / np.sqrt(g["n_att"].to_numpy())
+            ecdf = lambda v: float((vals < v).mean() * 100)
+            pct = np.array([ecdf(v) for v in vals]); lo = np.array([ecdf(v - Z90 * s) for v, s in zip(vals, sem_k)]); hi = np.array([ecdf(v + Z90 * s) for v, s in zip(vals, sem_k)])
+            parts.append(g.with_columns(pl.Series("pctile", pct.round(0)), pl.Series("pctile_lo", lo.round(0)), pl.Series("pctile_hi", hi.round(0))))
+        d = pl.concat(parts)
+        d = d.with_columns(
                            pl.lit(dn).alias("drill"), pl.lit(r["feature"]).alias("feature"), pl.lit(r["verdict"]).alias("verdict"))
         rows.append(d.select("nfl_id", "display_name", "nfl_position", "group", "draft_year", "draft_overall_pick", "drill", "feature",
                              "value", "n_att", "pctile", "pctile_lo", "pctile_hi", "verdict"))
