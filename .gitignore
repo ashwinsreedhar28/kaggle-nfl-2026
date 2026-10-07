@@ -1,0 +1,15 @@
+# competition data must never be committed (Kaggle rules §2.4.b)
+data/
+*.csv
+*.parquet
+*.zip
+kaggle.json
+.kaggle/
+
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+.DS_Store
+reports/figures/*.png
+!reports/figures/.gitkeep
