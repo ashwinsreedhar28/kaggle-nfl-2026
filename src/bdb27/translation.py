@@ -8,9 +8,8 @@ play, p90 lateral accel), compare nested OLS models by leave-one-out R^2:
   M3  M0 + stopwatch + sensor
 and report standardized coefficients from M3.
 
-Stage 2 — production, where the data supports it:
-  IDL/EDGE pressure_rate ~ controls + sensor (binomial, snaps-weighted)
-  WR yac_oe / sep_oe / epa_per_target ~ controls + sensor
+Stage 2 — production (one row per player, robust OLS; standardized betas with 95% CI):
+  EDGE/IDL pressure & sack rates, OL pressure allowed, WR/TE YAC-oe / sep-oe / EPA per target
 
     python -m bdb27.translation   # -> data/derived/translation_stage1.csv, translation_stage2.csv
 """
@@ -83,32 +82,31 @@ def stage1(d: pl.DataFrame) -> pl.DataFrame:
 
 
 def stage2(d: pl.DataFrame) -> pl.DataFrame:
+    """Production outcomes, one row per player, OLS with HC3 robust SEs (unweighted) and
+    volume-weighted WLS. A snaps-as-trials binomial GLM was tried first and abandoned:
+    it ignores player-level overdispersion and inflated significance ~100x."""
     rows = []
-    specs = [("IDL", "pressure_rate", "rush_snaps", 100, True), ("EDGE", "pressure_rate", "rush_snaps", 100, True),
-             ("IDL", "quick_pressure_rate", "rush_snaps", 100, True), ("EDGE", "quick_pressure_rate", "rush_snaps", 100, True),
-             ("WR", "yac_oe", "targets", 30, False), ("WR", "sep_oe", "targets", 30, False), ("WR", "epa_per_target", "targets", 30, False),
-             ("TE", "yac_oe", "targets", 30, False), ("OL", "pressure_allowed_rate", "pp_snaps", 100, True)]
-    for g, oc, vol, mn, binom in specs:
+    specs = [("EDGE", "pressure_rate", "rush_snaps", 100), ("IDL", "pressure_rate", "rush_snaps", 100),
+             ("EDGE", "quick_pressure_rate", "rush_snaps", 100), ("IDL", "quick_pressure_rate", "rush_snaps", 100),
+             ("EDGE", "sack_rate", "rush_snaps", 100), ("OL", "pressure_allowed_rate", "pp_snaps", 100),
+             ("OL", "peak_ppa_mean", "pp_snaps", 100), ("WR", "yac_oe", "targets", 30), ("WR", "sep_oe", "targets", 30),
+             ("WR", "epa_per_target", "targets", 30), ("TE", "yac_oe", "targets", 30)]
+    for g, oc, vol, mn in specs:
         s = d.filter((pl.col("group") == g) & (pl.col(vol) >= mn)).select(oc, vol, *CONTROLS, *SENSOR, "forty").drop_nulls()
         if s.height < 15:
             continue
-        Xc = np.column_stack([np.ones(s.height), _z(s.select(CONTROLS).to_numpy().astype(float))])
-        Xs = np.column_stack([Xc, _z(s.select(SENSOR).to_numpy().astype(float))])
-        Xf = np.column_stack([Xc, _z(s.select(["forty"]).to_numpy().astype(float))])
-        if binom:
-            n = s[vol].to_numpy().astype(float); k = np.round(s[oc].to_numpy() * n)
-            def fit(X): return sm.GLM(np.column_stack([k, n - k]), X, family=sm.families.Binomial()).fit()
-            f0, f1, ff = fit(Xc), fit(Xs), fit(Xf)
-            r = {"group": g, "outcome": oc, "n": s.height, "model": "binomial",
-                 "dev_controls": round(f0.deviance, 1), "dev_sensor": round(f1.deviance, 1), "dev_stopwatch": round(ff.deviance, 1)}
-        else:
-            y = s[oc].to_numpy().astype(float)
-            f1 = sm.OLS(y, Xs).fit()
-            r = {"group": g, "outcome": oc, "n": s.height, "model": "ols",
-                 "r2_loo_controls": round(loo_r2(Xc, y), 3), "r2_loo_sensor": round(loo_r2(Xs, y), 3), "r2_loo_stopwatch": round(loo_r2(Xf, y), 3)}
-        for name, b, p in zip(SENSOR, f1.params[-len(SENSOR):], f1.pvalues[-len(SENSOR):]):
-            r[f"b_{name}"] = round(b, 3); r[f"p_{name}"] = round(p, 3)
-        rows.append(r)
+        y = s[oc].to_numpy().astype(float); w = s[vol].to_numpy().astype(float); sd_y = y.std(ddof=1)
+        for model, cols in (("sensor", CONTROLS + SENSOR), ("stopwatch", CONTROLS + ["forty"])):
+            X = np.column_stack([np.ones(s.height), _z(s.select(cols).to_numpy().astype(float))])
+            f0 = sm.OLS(y, X).fit(cov_type="HC3"); f1 = sm.WLS(y, X, weights=w).fit(cov_type="HC3")
+            for j, name in enumerate(cols):
+                if name in CONTROLS:
+                    continue
+                rows.append({"group": g, "outcome": oc, "n": s.height, "model": model, "feature": name,
+                             "beta_sd": round(f0.params[j + 1] / sd_y, 3), "ci_lo": round(f0.conf_int()[j + 1, 0] / sd_y, 3),
+                             "ci_hi": round(f0.conf_int()[j + 1, 1] / sd_y, 3), "p": round(f0.pvalues[j + 1], 3),
+                             "beta_sd_weighted": round(f1.params[j + 1] / sd_y, 3), "p_weighted": round(f1.pvalues[j + 1], 3),
+                             "r2_loo": round(loo_r2(X, y), 3)})
     return pl.DataFrame(rows)
 
 

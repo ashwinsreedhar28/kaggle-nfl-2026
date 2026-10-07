@@ -55,14 +55,21 @@ def fig1_forty_curves():
     fp = pl.read_csv(DERIVED / "forty_players.csv").drop_nulls(["forty", "vmax"])
 
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 4.6), gridspec_kw={"width_ratios": [1.25, 1]})
+    ends = {}
     for grp in ["WR", "DB", "TE", "EDGE", "IDL", "OL"]:
         arr = np.array(curves.get(grp, []))
         if not len(arr):
             continue
         med = np.median(arr, 0)
         a1.plot(grid, med, color=GROUP_COLOR[grp], lw=2, label=f"{grp} (n={len(arr)})")
-        a1.text(40.6, med[-1], grp, color=GROUP_COLOR[grp], va="center", fontsize=9, fontweight="bold")
-    a1.set_xlabel("distance from onset (yd)"); a1.set_ylabel("speed (yd/s)"); a1.set_xlim(0, 44); a1.set_ylim(0, 11.5)
+        ends[grp] = (med[-1], len(arr))
+    # direct labels, pushed apart vertically by >= 0.45 yd/s
+    order = sorted(ends, key=lambda g: ends[g][0]); ys = [ends[g][0] for g in order]
+    for i in range(1, len(ys)):
+        ys[i] = max(ys[i], ys[i - 1] + 0.45)
+    for g, yy in zip(order, ys):
+        a1.text(40.8, yy, f"{g} (n={ends[g][1]})", color=GROUP_COLOR[g], va="center", fontsize=8.5, fontweight="bold")
+    a1.set_xlabel("distance from onset (yd)"); a1.set_ylabel("speed (yd/s)"); a1.set_xlim(0, 47); a1.set_ylim(0, 11.5)
     a1.set_title("A  Median 40-yd speed curve by position group")
     a1.axvline(10, color=GRID, lw=1); a1.text(10.3, 0.4, "10-yd split", color=MUTED, fontsize=8)
     a2.scatter(fp["vmax"], fp["forty"], s=14, color=C["blue"], alpha=0.55, edgecolor=SURF, lw=0.5)
@@ -122,26 +129,40 @@ def fig3_nested_r2():
     fig.tight_layout(); fig.savefig(FIGS / "fig3_nested_r2.png", dpi=160); plt.close(fig)
 
 
-def fig4_edge_partial():
-    d = pl.read_csv(DERIVED / "translation_table.csv").with_columns(pl.col(pl.Float64).fill_nan(None))
-    e = d.filter((pl.col("group") == "EDGE") & (pl.col("rush_snaps") >= 100)).select(
-        "display_name", "pressure_rate", "rush_snaps", "combine_weight", "draft_overall_pick", "vmax", "accel_resid").drop_nulls()
-    Xc = sm.add_constant(e.select("combine_weight", "draft_overall_pick").to_numpy().astype(float))
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.4), sharey=True)
-    for ax, f, lab in zip(axes, ["vmax", "accel_resid"], ["sensor top speed (yd/s)", "acceleration beyond top speed\n(10-yd speed residual, yd/s)"]):
-        rx = sm.OLS(e[f].to_numpy().astype(float), Xc).fit().resid
-        ry = sm.OLS(e["pressure_rate"].to_numpy().astype(float), Xc).fit().resid * 100
-        fit = sm.OLS(ry, sm.add_constant(rx)).fit()
-        xs = np.linspace(rx.min(), rx.max(), 50); pr = fit.get_prediction(sm.add_constant(xs)).summary_frame(alpha=0.05)
-        ax.fill_between(xs, pr["mean_ci_lower"], pr["mean_ci_upper"], color=C["aqua"], alpha=0.15, lw=0)
-        ax.plot(xs, pr["mean"], color=C["aqua"], lw=2)
-        ax.scatter(rx, ry, s=np.sqrt(e["rush_snaps"].to_numpy()) * 1.6, color=C["aqua"], alpha=0.65, edgecolor=SURF, lw=0.6)
-        rho = np.corrcoef(rx, ry)[0, 1]
-        ax.text(0.03, 0.93, f"partial r = {rho:+.2f}, p = {fit.pvalues[1]:.3f}", transform=ax.transAxes, color=INK2, fontsize=9)
-        ax.set_xlabel(lab + ", adjusted for weight & draft slot"); ax.axhline(0, color=GRID, lw=1); ax.axvline(0, color=GRID, lw=1)
-    axes[0].set_ylabel("pressure rate (pct. points), adjusted")
-    fig.suptitle(f"EDGE rushers (n={e.height}, ≥100 regular-season pass-rush snaps): both components of the 40 predict pressure", x=0.02, ha="left", fontsize=11, fontweight="bold", color=INK)
-    fig.tight_layout(); fig.savefig(FIGS / "fig4_edge_partial.png", dpi=160); plt.close(fig)
+def fig4_production_forest():
+    """Standardized effect (per SD) of Combine speed on production, by group, with 95% CI."""
+    s2 = pl.read_csv(DERIVED / "translation_stage2.csv")
+    s2 = s2.filter(pl.col("feature").is_in(["forty", "vmax", "accel_resid"]))
+    labels = {"forty": "stopwatch 40 time", "vmax": "sensor top speed", "accel_resid": "sensor acceleration | top speed"}
+    colors = {"forty": C["orange"], "vmax": C["blue"], "accel_resid": C["aqua"]}
+    cells = [("EDGE", "pressure_rate", "EDGE pressure rate"), ("EDGE", "quick_pressure_rate", "EDGE quick-pressure rate"),
+             ("EDGE", "sack_rate", "EDGE sack rate"), ("IDL", "pressure_rate", "IDL pressure rate"),
+             ("OL", "pressure_allowed_rate", "OL pressure allowed"), ("WR", "sep_oe", "WR separation over expected"),
+             ("WR", "yac_oe", "WR YAC over expected"), ("WR", "epa_per_target", "WR EPA per target"), ("TE", "yac_oe", "TE YAC over expected")]
+    fig, ax = plt.subplots(figsize=(10, 0.62 * len(cells) + 1.4))
+    yt, yl = [], []
+    for i, (g, oc, lab) in enumerate(cells):
+        y0 = len(cells) - 1 - i
+        for k, feat in enumerate(["forty", "vmax", "accel_resid"]):
+            r = s2.filter((pl.col("group") == g) & (pl.col("outcome") == oc) & (pl.col("feature") == feat))
+            if not r.height:
+                continue
+            yy = y0 + (1 - k) * 0.22
+            b, lo, hi = r["beta_sd"][0], r["ci_lo"][0], r["ci_hi"][0]
+            if feat == "forty":  # flip sign so "faster" points the same way as the sensor features
+                b, lo, hi = -b, -hi, -lo
+            ax.plot([lo, hi], [yy, yy], color=colors[feat], lw=2, solid_capstyle="round")
+            ax.plot(b, yy, "o", color=colors[feat], ms=6, mec=SURF, mew=0.8)
+        n = s2.filter((pl.col("group") == g) & (pl.col("outcome") == oc))["n"]
+        yt.append(y0); yl.append(f"{lab}  (n={n[0] if len(n) else '—'})")
+    ax.axvline(0, color="#c3c2b7", lw=1); ax.set_yticks(yt); ax.set_yticklabels(yl, fontsize=9)
+    ax.set_xlabel("standardized effect of being FASTER (SD of outcome per SD of feature), adjusted for weight & draft slot; 95% CI")
+    ax.grid(axis="y", visible=False)
+    for feat in ["forty", "vmax", "accel_resid"]:
+        ax.plot([], [], "o-", color=colors[feat], label=labels[feat])
+    ax.legend(loc="lower right", fontsize=8.5, ncol=1)
+    ax.set_title("Does Combine speed predict production once you know weight and draft slot? Mostly no.", loc="left")
+    fig.tight_layout(); fig.savefig(FIGS / "fig4_production_forest.png", dpi=160); plt.close(fig)
 
 
 def fig5_hoop_null():
@@ -176,7 +197,7 @@ def fig6_yac():
 
 
 def main() -> None:
-    for f in (fig1_forty_curves, fig2_reliability, fig3_nested_r2, fig4_edge_partial, fig5_hoop_null, fig6_yac):
+    for f in (fig1_forty_curves, fig2_reliability, fig3_nested_r2, fig4_production_forest, fig5_hoop_null, fig6_yac):
         f(); print("ok", f.__name__)
 
 
