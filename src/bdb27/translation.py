@@ -25,7 +25,7 @@ from .screen import GROUPS
 
 CONTROLS = ["combine_weight", "draft_overall_pick"]
 STOPWATCH = ["forty", "ten_yd_split"]
-SENSOR = ["vmax", "v10", "accel_resid"]
+SENSOR = ["vmax", "accel_resid"]  # v10 = f(vmax) + accel_resid, so v10 itself would be collinear
 IG_OUTCOMES = ["ig_s_p95", "ig_amax_med", "ig_lat_ac_p90"]
 MIN_IG_PLAYS = 40
 
@@ -106,7 +106,7 @@ def stage2(d: pl.DataFrame) -> pl.DataFrame:
             f1 = sm.OLS(y, Xs).fit()
             r = {"group": g, "outcome": oc, "n": s.height, "model": "ols",
                  "r2_loo_controls": round(loo_r2(Xc, y), 3), "r2_loo_sensor": round(loo_r2(Xs, y), 3), "r2_loo_stopwatch": round(loo_r2(Xf, y), 3)}
-        for name, b, p in zip(SENSOR, f1.params[-3:], f1.pvalues[-3:]):
+        for name, b, p in zip(SENSOR, f1.params[-len(SENSOR):], f1.pvalues[-len(SENSOR):]):
             r[f"b_{name}"] = round(b, 3); r[f"p_{name}"] = round(p, 3)
         rows.append(r)
     return pl.DataFrame(rows)
@@ -118,7 +118,7 @@ def main() -> None:
     s1 = stage1(d); s1.write_csv(DERIVED / "translation_stage1.csv")
     with pl.Config(tbl_rows=40, tbl_width_chars=200, tbl_cols=20):
         print(s1.select("group", "outcome", "n", "r2_controls", "r2_stopwatch", "r2_sensor", "r2_both", "sensor_minus_stopwatch",
-                        "b_forty", "p_forty", "b_vmax", "p_vmax", "b_v10", "p_v10", "b_accel_resid", "p_accel_resid"))
+                        "b_forty", "p_forty", "b_ten_yd_split", "p_ten_yd_split", "b_vmax", "p_vmax", "b_accel_resid", "p_accel_resid"))
         s2 = stage2(d); s2.write_csv(DERIVED / "translation_stage2.csv"); print(s2)
 
 
