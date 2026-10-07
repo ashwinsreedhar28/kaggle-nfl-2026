@@ -15,3 +15,4 @@ forty:     ; $(PY) -m bdb27.forty
 translation: ; $(PY) -m bdb27.translation
 figures:   ; $(PY) -m bdb27.figures
 reportcard: ; $(PY) -m bdb27.reportcard
+usability: ; $(PY) -m bdb27.usability
